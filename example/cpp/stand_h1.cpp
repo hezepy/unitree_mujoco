@@ -18,7 +18,7 @@ using namespace unitree::robot;
 constexpr double PosStopF = (2.146E+9f);
 constexpr double VelStopF = (16000.0f);
 
-constexpr int kNumMotors = 27;
+constexpr int kNumMotors = 20;
 constexpr float kPi = 3.141592654;
 constexpr float kPi_2 = 1.57079632;
 constexpr float kPi_4 = 0.785398163;
@@ -73,13 +73,11 @@ private:
     double stand_up_joint_pos[kNumMotors] = {0.0, -0.2, 0.5, 0.0, -0.2, 0.5,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                     0.0, 0.0, 0.0};
+                                     0.0, 0.0};
     double stand_down_joint_pos[kNumMotors] = {0.0, -0.8, 1.0, 0.0, -0.8, 1.0,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                     0.0, 0.0, 0.0};
+                                     0.0, 0.0};
     double dt = 0.002;
     double runing_time = 0.0;
     double phase = 0.0;
@@ -164,6 +162,11 @@ void H1Control::InitLowCmd()
 void H1Control::LowStateMessageHandler(const void *message)
 {
     low_state = *(unitree_go::msg::dds_::LowState_ *)message;
+
+    for (int i = 0; i < kNumMotors; i++)
+    {
+        std::cout << "Motor torque [" << i << "]: " << low_state.motor_state()[i].tau_est() << std::endl;
+    }
 }
 
 void H1Control::LowCmdWrite()
