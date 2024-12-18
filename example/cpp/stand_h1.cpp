@@ -24,48 +24,33 @@ constexpr float kPi_2 = 1.57079632;
 constexpr float kPi_4 = 0.785398163;
 
 enum JointIndex {
-  // Left leg
-  kLeftHipYaw = 0,
-  kLeftHipPitch = 1,
-  kLeftHipRoll = 2,
-  kLeftKnee = 3,
-  kLeftAnkle = 4,
-  kLeftAnkleRoll = 5,
   // Right leg
-  kRightHipYaw = 6,
-  kRightHipPitch = 7,
-  kRightHipRoll = 8,
-  kRightKnee = 9,
-  kRightAnkle = 10,
-  kRightAnkleRoll = 11,
+  kRightHipYaw = 8,
+  kRightHipRoll = 0,
+  kRightHipPitch = 1,
+  kRightKnee = 2,
+  kRightAnkle = 11,
+  // Left leg
+  kLeftHipYaw = 7,
+  kLeftHipRoll = 3,
+  kLeftHipPitch = 4,
+  kLeftKnee = 5,
+  kLeftAnkle = 10,
 
-  kWaistYaw = 12,
+  kWaistYaw = 6,
 
-  // Left arm
-  kLeftShoulderPitch = 13,
-  kLeftShoulderRoll = 14,
-  kLeftShoulderYaw = 15,
-  kLeftElbow = 16,
-  kLeftWristYaw = 17,
-  kLeftWristPitch = 18,
-  kLeftWristRoll = 19,
+  kNotUsedJoint = 9,
+
   // Right arm
-  kRightShoulderPitch = 20,
-  kRightShoulderRoll = 21,
-  kRightShoulderYaw = 22,
-  kRightElbow = 23,
-  kRightWristYaw = 24,
-  kRightWristPitch = 25,
-  kRightWristRoll = 26,
-
-  kNotUsedJoint = 27,
-  kNotUsedJoint1 = 28,
-  kNotUsedJoint2 = 29,
-  kNotUsedJoint3 = 30,
-  kNotUsedJoint4 = 31,
-  kNotUsedJoint5 = 32,
-  kNotUsedJoint6 = 33,
-  kNotUsedJoint7 = 34
+  kRightShoulderPitch = 12,
+  kRightShoulderRoll = 13,
+  kRightShoulderYaw = 14,
+  kRightElbow = 15,
+  // Left arm
+  kLeftShoulderPitch = 16,
+  kLeftShoulderRoll = 17,
+  kLeftShoulderYaw = 18,
+  kLeftElbow = 19,
 };
 
 class H1Control
@@ -85,12 +70,12 @@ private:
     //                                  0.00571868, 0.608813, -1.21763, -0.00571868, 0.608813, -1.21763};
     // double stand_down_joint_pos[12] = {0.0473455, 1.22187, -2.44375, -0.0473455, 1.22187, -2.44375, 0.0473455,
     //                                    1.22187, -2.44375, -0.0473455, 1.22187, -2.44375};
-    double stand_up_joint_pos[kNumMotors] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    double stand_up_joint_pos[kNumMotors] = {0.0, -0.2, 0.5, 0.0, -0.2, 0.5,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0};
-    double stand_down_joint_pos[kNumMotors] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    double stand_down_joint_pos[kNumMotors] = {0.0, -0.8, 1.0, 0.0, -0.8, 1.0,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -195,7 +180,7 @@ void H1Control::LowCmdWrite()
         {
             low_cmd.motor_cmd()[i].q() = phase * stand_up_joint_pos[i] + (1 - phase) * stand_down_joint_pos[i];
             low_cmd.motor_cmd()[i].dq() = 0;
-            low_cmd.motor_cmd()[i].kp() = phase * 50.0 + (1 - phase) * 20.0;
+            low_cmd.motor_cmd()[i].kp() = phase * 80.0 + (1 - phase) * 30.0;
             low_cmd.motor_cmd()[i].kd() = 3.5;
             low_cmd.motor_cmd()[i].tau() = 0;
         }
