@@ -165,6 +165,9 @@ void H1Control::LowStateMessageHandler(const void *message)
 
     for (int i = 0; i < kNumMotors; i++)
     {
+        std::cout << "Motor q [" << i << "]: " << low_state.motor_state()[i].q() << std::endl;
+        std::cout << "Motor dq [" << i << "]: " << low_state.motor_state()[i].dq() << std::endl;
+        // std::cout << "Motor ddq [" << i << "]: " << low_state.motor_state()[i].ddq() << std::endl;
         std::cout << "Motor torque [" << i << "]: " << low_state.motor_state()[i].tau_est() << std::endl;
     }
 }
