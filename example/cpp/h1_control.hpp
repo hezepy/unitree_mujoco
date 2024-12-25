@@ -169,9 +169,14 @@ void H1Control::InitLowCmd()
     low_cmd.level_flag() = 0xFF;
     low_cmd.gpio() = 0;
 
-    for (int i = 0; i < 20; i++)
+    for (int i = 0; i < kNumMotors; i++)
     {
-        low_cmd.motor_cmd()[i].mode() = (0x01); // motor switch to servo (PMSM) mode
+        if (IsWeakMotor(i)) {
+          low_cmd.motor_cmd()[i].mode() = (0x01);
+        } else {
+          low_cmd.motor_cmd()[i].mode() = (0x0A);
+        }
+        // low_cmd.motor_cmd()[i].mode() = (0x01); // motor switch to servo (PMSM) mode
         low_cmd.motor_cmd()[i].q() = (PosStopF);
         low_cmd.motor_cmd()[i].kp() = (0);
         low_cmd.motor_cmd()[i].dq() = (VelStopF);
@@ -206,8 +211,8 @@ void H1Control::LowCmdWrite()
         {
             low_cmd.motor_cmd()[i].q() = phase * stand_up_joint_pos[i] + (1 - phase) * stand_down_joint_pos[i];
             low_cmd.motor_cmd()[i].dq() = 0;
-            low_cmd.motor_cmd()[i].kp() = phase * kp_low_ + (1 - phase) * 30.0;
-            low_cmd.motor_cmd()[i].kd() = kd_low_;
+            low_cmd.motor_cmd()[i].kp() = IsWeakMotor(i) ? phase * kp_low_ + (1 - phase) * 30.0 : phase * kp_high_ + (1 - phase) * 30.0;
+            low_cmd.motor_cmd()[i].kd() = IsWeakMotor(i) ? kd_low_ : kd_high_;
             low_cmd.motor_cmd()[i].tau() = 0;
         }
     }
@@ -219,8 +224,8 @@ void H1Control::LowCmdWrite()
         {
             low_cmd.motor_cmd()[i].q() = phase * stand_down_joint_pos[i] + (1 - phase) * stand_up_joint_pos[i];
             low_cmd.motor_cmd()[i].dq() = 0;
-            low_cmd.motor_cmd()[i].kp() = kp_low_;
-            low_cmd.motor_cmd()[i].kd() = kd_low_;
+            low_cmd.motor_cmd()[i].kp() = IsWeakMotor(i) ? kp_low_ : kp_high_;
+            low_cmd.motor_cmd()[i].kd() = IsWeakMotor(i) ? kd_low_ : kd_high_;
             low_cmd.motor_cmd()[i].tau() = 0;
         }
     }
