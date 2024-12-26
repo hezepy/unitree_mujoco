@@ -211,7 +211,7 @@ void H1Control::LowCmdWrite()
         {
             low_cmd.motor_cmd()[i].q() = phase * stand_up_joint_pos[i] + (1 - phase) * stand_down_joint_pos[i];
             low_cmd.motor_cmd()[i].dq() = 0;
-            low_cmd.motor_cmd()[i].kp() = IsWeakMotor(i) ? phase * kp_low_ + (1 - phase) * 30.0 : phase * kp_high_ + (1 - phase) * 30.0;
+            low_cmd.motor_cmd()[i].kp() = IsWeakMotor(i) ? phase * kp_low_ + (1 - phase) * kp_low_ * 0.5 : phase * kp_high_ + (1 - phase) * kp_high_ * 0.3;
             low_cmd.motor_cmd()[i].kd() = IsWeakMotor(i) ? kd_low_ : kd_high_;
             low_cmd.motor_cmd()[i].tau() = 0;
         }
