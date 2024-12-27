@@ -13,4 +13,7 @@ target_link_libraries(stand_h1  unitree_sdk2)
 add_executable(h1_hand h1_hand.cpp)
 target_link_libraries(h1_hand  unitree_sdk2)
 
+add_executable(h1_wrist h1_wrist.cpp)
+target_link_libraries(h1_wrist  unitree_sdk2)
+
 SET(CMAKE_BUILD_TYPE Release)
