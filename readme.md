@@ -312,3 +312,24 @@ source ~/unitree_ros2/setup.sh # Use the network card connected to the robot
 export ROS_DOMAIN_ID=0 # Use the default domain id
 ./install/stand_go2/bin/stand_go2 # Run
 ```
+##4. Build virtual environment for IK calculation and hands control
+```bash
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm ~/miniconda3/miniconda.sh
+```
+After installation
+```bash
+~/miniconda3/bin/conda init --all
+source ~/.bashrc
+```
+Create the virtual environment and install Pinocchio
+```bash
+conda create -n tv python=3.8
+conda activate tv
+# If you use `pip install`, Make sure pinocchio version is 3.1.0
+conda install pinocchio -c conda-forge
+pip install meshcat
+pip install casadi
+```
