@@ -201,7 +201,7 @@ void H1Control::LowStateMessageHandler(const void *message)
 void H1Control::LowCmdWrite()
 {
     runing_time += dt;
-    if (runing_time < 3.0)
+    if (runing_time < 8.0)
     {
         // Stand up in first 3 second
 
@@ -209,23 +209,24 @@ void H1Control::LowCmdWrite()
         phase = tanh(runing_time / 1.2);
         for (int i = 0; i < kNumMotors; i++)
         {
-            low_cmd.motor_cmd()[i].q() = phase * stand_up_joint_pos[i] + (1 - phase) * stand_down_joint_pos[i];
+            low_cmd.motor_cmd()[i].q() = 0; 
             low_cmd.motor_cmd()[i].dq() = 0;
-            low_cmd.motor_cmd()[i].kp() = IsWeakMotor(i) ? phase * kp_low_ + (1 - phase) * kp_low_ * 0.5 : phase * kp_high_ + (1 - phase) * kp_high_ * 0.3;
-            low_cmd.motor_cmd()[i].kd() = IsWeakMotor(i) ? kd_low_ : kd_high_;
-            low_cmd.motor_cmd()[i].tau() = 0;
+            low_cmd.motor_cmd()[i].kp() = 0.0;
+            low_cmd.motor_cmd()[i].kd() = 0.0;
+            low_cmd.motor_cmd()[i].tau() = 0.0;
         }
+        low_cmd.motor_cmd()[15].tau() = -sin(runing_time / 8.0);
     }
     else
     {
         // Then stand down
-        phase = tanh((runing_time - 3.0) / 1.2);
+        // phase = tanh((runing_time - 3.0) / 1.2);
         for (int i = 0; i < kNumMotors; i++)
         {
-            low_cmd.motor_cmd()[i].q() = phase * stand_down_joint_pos[i] + (1 - phase) * stand_up_joint_pos[i];
+            low_cmd.motor_cmd()[i].q() = 0;
             low_cmd.motor_cmd()[i].dq() = 0;
-            low_cmd.motor_cmd()[i].kp() = IsWeakMotor(i) ? kp_low_ : kp_high_;
-            low_cmd.motor_cmd()[i].kd() = IsWeakMotor(i) ? kd_low_ : kd_high_;
+            low_cmd.motor_cmd()[i].kp() = 0.0;
+            low_cmd.motor_cmd()[i].kd() = 0.0;
             low_cmd.motor_cmd()[i].tau() = 0;
         }
     }
