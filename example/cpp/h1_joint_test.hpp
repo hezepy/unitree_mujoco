@@ -70,13 +70,41 @@ class H1Control
 {
 public:
     H1Control(){};
+
+    H1Control(fs::path &log_file_name)
+    {
+        // set log file
+        log_file = std::ofstream(log_file_name, std::ios::binary);
+    }
+
     ~H1Control(){};
     void Init();
+
+    std::vector<float> GetLog()
+    {
+        // record input, output and other info into a vector
+        std::vector<float> log;
+
+        for (int i = 0; i < kNumMotors; ++i)
+        {
+            log.push_back(low_cmd.motor_cmd()[i].tau());
+        }
+        for (int i = 0; i < kNumMotors; ++i)
+        {
+            log.push_back(low_state.motor_state()[i].tau_est());
+        }
+            
+        return log;
+    }
+
+protected:
+    std::ofstream log_file;
 
 private:
     void InitLowCmd();
     void LowStateMessageHandler(const void *messages);
     void LowCmdWrite();
+    void LogWrite();
 
 private:
     // double stand_up_joint_pos[12] = {0.00571868, 0.608813, -1.21763, -0.00571868, 0.608813, -1.21763,
@@ -207,6 +235,7 @@ void H1Control::LowStateMessageHandler(const void *message)
         // std::cout << "Motor ddq [" << i << "]: " << low_state.motor_state()[i].ddq() << std::endl;
         std::cout << "Motor torque [" << i << "]: " << low_state.motor_state()[i].tau_est() << std::endl;
     }
+    LogWrite(); // joint state log
 }
 
 void H1Control::LowCmdWrite()
@@ -246,9 +275,16 @@ void H1Control::LowCmdWrite()
     lowcmd_publisher->Write(low_cmd);
 }
 
-// void H1Control::LogWrite()
-// {
-    
+void H1Control::LogWrite()
+{
+    if (log_file.is_open())
+    {
+        auto log = GetLog();
+        for (const auto &v : log)
+        {
+            log_file << v << " ";
+        }
+        log_file << std::endl;
+    }
+}
 
-
-// }

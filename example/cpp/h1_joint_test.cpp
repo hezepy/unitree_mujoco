@@ -23,8 +23,7 @@ int main(int argc, const char **argv)
     fs::create_directories(log_folder);
     fs::path log_file_name = log_folder / "log.txt";
 
-
-    H1Control H1Control;
+    H1Control H1Control(log_file_name);
     H1Control.Init();
 
     while (1)
