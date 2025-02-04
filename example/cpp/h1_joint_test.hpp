@@ -85,6 +85,7 @@ public:
         // record input, output and other info into a vector
         std::vector<float> log;
 
+        log.push_back(runing_time);
         for (int i = 0; i < kNumMotors; ++i)
         {
             log.push_back(low_cmd.motor_cmd()[i].tau());
