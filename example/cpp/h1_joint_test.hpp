@@ -236,7 +236,7 @@ void H1Control::LowStateMessageHandler(const void *message)
         // std::cout << "Motor ddq [" << i << "]: " << low_state.motor_state()[i].ddq() << std::endl;
         std::cout << "Motor torque [" << i << "]: " << low_state.motor_state()[i].tau_est() << std::endl;
     }
-    LogWrite(); // joint state log
+    // LogWrite(); // joint state log
 }
 
 void H1Control::LowCmdWrite()
@@ -256,7 +256,7 @@ void H1Control::LowCmdWrite()
             low_cmd.motor_cmd()[i].kd() = 0.0;
             low_cmd.motor_cmd()[i].tau() = 0.0;
         }
-        low_cmd.motor_cmd()[15].tau() = -sin(runing_time / 8.0);
+        low_cmd.motor_cmd()[15].tau() = -sin(runing_time * kPi / 4.0);
     }
     else
     {
@@ -274,6 +274,8 @@ void H1Control::LowCmdWrite()
 
     low_cmd.crc() = crc32_core((uint32_t *)&low_cmd, (sizeof(unitree_go::msg::dds_::LowCmd_) >> 2) - 1);
     lowcmd_publisher->Write(low_cmd);
+
+    LogWrite(); // joint state log
 }
 
 void H1Control::LogWrite()
