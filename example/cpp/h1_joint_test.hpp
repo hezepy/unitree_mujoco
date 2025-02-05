@@ -256,7 +256,7 @@ void H1Control::LowCmdWrite()
             low_cmd.motor_cmd()[i].kd() = 0.0;
             low_cmd.motor_cmd()[i].tau() = 0.0;
         }
-        low_cmd.motor_cmd()[15].tau() = -sin(runing_time * kPi / 4.0);
+        low_cmd.motor_cmd()[2].tau() = -5 * sin(runing_time * kPi / 4.0);
     }
     else
     {
