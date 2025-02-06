@@ -131,6 +131,7 @@ class State:
 
     def LowStateMessageHandler(self, msg: LowState_):
             self.low_state = msg
+            print(msg.motor_state[1].q)
 
 
 input("Press enter to start")
@@ -178,8 +179,8 @@ if __name__ == '__main__':
         for i in range(10):
             motor_cmd[i+9] = tau[i+10]
 
-        print(motor_cmd)
-        print(state.low_state.motor_state[1].q)
+        # print(motor_cmd)
+        # print(state.low_state.imu_state)
 
 
         # Total time for standing up or standing down is about 1.2s
