@@ -9,6 +9,7 @@ from pinocchio.visualize import MeshcatVisualizer
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
+from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
 from unitree_sdk2py.utils.crc import CRC
@@ -114,10 +115,6 @@ class Robot_IK:
 
         self.tau = np.concatenate((np.zeros((6)), sol[: self.model.nv - 6]))
 
-
-        # self.opti.set_value(self.param_tf_l, left_pose)
-        # self.opti.set_value(self.param_tf_r, right_pose)
-
         return self.g_grav
 
 #######################
@@ -126,9 +123,15 @@ dt = 0.002
 runing_time = 0.0
 crc = CRC()
 
-low_state = None  
-def LowStateMessageHandler(msg: LowState_):
-        low_state = msg
+class State: 
+    def __init__(self):
+        self.low_state = None  
+        self.sub = ChannelSubscriber("rt/lowstate", LowState_)
+        self.sub.Init(self.LowStateMessageHandler, 10)
+
+    def LowStateMessageHandler(self, msg: LowState_):
+            self.low_state = msg
+
 
 input("Press enter to start")
 
@@ -142,9 +145,12 @@ if __name__ == '__main__':
 
     # Create a publisher to publish the data defined in UserData class
     pub = ChannelPublisher("rt/lowcmd", LowCmd_)
-    sub = ChannelSubscriber("rt/lowstate", LowState_)
     pub.Init()
-    sub.Init(LowStateMessageHandler, 10)
+    # sub = ChannelSubscriber("rt/lowstate", LowState_)
+    # sub.Init(LowStateMessageHandler, 10)
+
+    state = State()
+    state.__init__()
 
     cmd = unitree_go_msg_dds__LowCmd_()
     cmd.head[0] = 0xFE
@@ -173,6 +179,7 @@ if __name__ == '__main__':
             motor_cmd[i+9] = tau[i+10]
 
         print(motor_cmd)
+        print(state.low_state.motor_state[1].q)
 
 
         # Total time for standing up or standing down is about 1.2s
