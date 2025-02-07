@@ -126,13 +126,15 @@ crc = CRC()
 class State: 
     def __init__(self):
         self.low_state = None  
+        self.q = np.zeros(kNumMotors+6)
         self.sub = ChannelSubscriber("rt/lowstate", LowState_)
         self.sub.Init(self.LowStateMessageHandler, 10)
 
     def LowStateMessageHandler(self, msg: LowState_):
             self.low_state = msg
-            print(msg.motor_state[1].q)
-
+            # print(msg.motor_state[20].q)
+            for i in range(kNumMotors):
+                self.q[i+6] = msg.motor_state[i].q
 
 input("Press enter to start")
 
@@ -179,8 +181,7 @@ if __name__ == '__main__':
         for i in range(10):
             motor_cmd[i+9] = tau[i+10]
 
-        # print(motor_cmd)
-        # print(state.low_state.imu_state)
+        print("Joint state q:", state.q)
 
 
         # Total time for standing up or standing down is about 1.2s
