@@ -92,9 +92,7 @@ class Robot_IK:
         self.v = self.v0.copy()
         self.tau = np.zeros(self.model.nv)
 
-    def ik_func(self):
-        # q = self.q0.copy()
-        # return q
+    def ik_func(self, q0):
         J_constraint = np.zeros((self.contact_dim, self.model.nv))
         pin.computeJointJacobians(self.model, self.data_control, self.q)
 
@@ -106,8 +104,7 @@ class Robot_IK:
                 self.contact_model.reference_frame,
         )
 
-        # A = np.vstack((S, J_constraint))
-        # b = pin.rnea(model, data_control, q, v, np.zeros(model.nv))
+        self.q0 = q0
 
         self.g_grav = pin.rnea(self.model, self.data, self.q0, self.v0, self.a0) # 25
 
@@ -173,15 +170,15 @@ if __name__ == '__main__':
 
         runing_time += dt
 
-        tau = h1_ik.ik_func()
+        tau = h1_ik.ik_func(state.q)
+        print("Joint state q:", state.q)
+        print("Grav. torque:", tau)
         
         # motor - joint transform
         for i in range(9):
             motor_cmd[i] = tau[i]
         for i in range(10):
             motor_cmd[i+9] = tau[i+10]
-
-        print("Joint state q:", state.q)
 
 
         # Total time for standing up or standing down is about 1.2s
