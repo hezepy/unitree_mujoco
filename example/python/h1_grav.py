@@ -108,9 +108,14 @@ class Robot_IK:
 
         self.g_grav = pin.rnea(self.model, self.data, self.q0, self.v0, self.a0) # 25
 
-        sol = np.linalg.lstsq(J_constraint.T, self.g_grav, rcond=None)[0]
+        # sol = np.linalg.lstsq(J_constraint.T, self.g_grav, rcond=None)[0]
+
+        print(self.g_grav)
+        sol = self.g_grav
 
         self.tau = np.concatenate((np.zeros((6)), sol[: self.model.nv - 6]))
+
+        print(self.tau)
 
         return self.g_grav
 
@@ -171,8 +176,8 @@ if __name__ == '__main__':
         runing_time += dt
 
         tau = h1_ik.ik_func(state.q)
-        print("Joint state q:", state.q)
-        print("Grav. torque:", tau)
+        # print("Joint state q:", state.q)
+        # print("Grav. torque:", tau)
         
         # motor - joint transform
         for i in range(9):
