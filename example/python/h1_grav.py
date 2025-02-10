@@ -6,6 +6,8 @@ import pinocchio as pin
 from pinocchio.robot_wrapper import RobotWrapper    
 from pinocchio.visualize import MeshcatVisualizer 
 
+from enum import IntEnum
+
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
@@ -18,8 +20,65 @@ from robot_descriptions.loaders.pinocchio import load_robot_description
 
 kNumMotors = 20
 
+class MotorJntIndex(IntEnum):
+    # Right leg
+    RightHipYaw = 8
+    RightHipRoll = 0
+    RightHipPitch = 1
+    RightKnee = 2
+    RightAnkle = 11
+    # Left leg
+    LeftHipYaw = 7
+    LeftHipRoll = 3
+    LeftHipPitch = 4
+    LeftKnee = 5
+    LeftAnkle = 10
+
+    WaistYaw = 6
+
+    NotUsedJoint = 9
+
+    # Right arm
+    RightShoulderPitch = 12
+    RightShoulderRoll = 13
+    RightShoulderYaw = 14
+    RightElbow = 15
+    # Left arm
+    LeftShoulderPitch = 16
+    LeftShoulderRoll = 17
+    LeftShoulderYaw = 18
+    LeftElbow = 19
+
+class MJModelIndex(IntEnum):
+    # Right leg
+    RightHipYaw = 5
+    RightHipRoll = 6
+    RightHipPitch = 7
+    RightKnee = 8
+    RightAnkle = 9
+    # Left leg
+    LeftHipYaw = 0
+    LeftHipRoll = 1
+    LeftHipPitch = 2
+    LeftKnee = 3
+    LeftAnkle = 4
+
+    WaistYaw = 10
+
+    # Right arm
+    RightShoulderPitch = 17
+    RightShoulderRoll = 16
+    RightShoulderYaw = 15
+    RightElbow = 18
+    # Left arm
+    LeftShoulderPitch = 13
+    LeftShoulderRoll = 12
+    LeftShoulderYaw = 11
+    LeftElbow = 14
+
+
 init_joint = np.array([
-    0.0, -0.2, 0.5, 0.0, -0.2, 0.5,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0
@@ -48,6 +107,7 @@ class Robot_IK:
         self.frame_id = self.model.getFrameId("right_ankle_link") 
 
         print("dof: ",self.model.nv)
+        print("frame_id: ",self.frame_id)
 
         self.q0 = np.zeros(kNumMotors+6) # seems dof is 25, but coordinate is 26 !
         self.q0[7:] = init_joint
@@ -66,6 +126,7 @@ class Robot_IK:
         self.robot.loadViewerModel("pinocchio")
         self.robot.display(self.q0)
 
+        print("Init. state q:", self.q0)
         # breakpoint()
 
         contact_models = []
@@ -150,26 +211,57 @@ class State:
     def __init__(self):
         self.low_state = None  
         self.q = np.zeros(kNumMotors+6)
-        self.q[6] = 1
+        # self.q[6] = 1
         self.sub = ChannelSubscriber("rt/lowstate", LowState_)
         self.sub.Init(self.LowStateMessageHandler, 10)
+
+    def __ModelStateTrans(self, motor_state, quaternion):
+
+        model_state = np.zeros(kNumMotors+6)
+
+        model_state[3:7] = quaternion
+
+        model_state[6] = 1 #
+
+        model_state[MJModelIndex.LeftAnkle+7] = motor_state[MotorJntIndex.LeftAnkle]
+        model_state[MJModelIndex.LeftKnee+7] = motor_state[MotorJntIndex.LeftKnee]
+        model_state[MJModelIndex.LeftHipPitch+7] = motor_state[MotorJntIndex.LeftHipPitch]
+        model_state[MJModelIndex.LeftHipRoll+7] = motor_state[MotorJntIndex.LeftHipRoll]
+        model_state[MJModelIndex.LeftHipYaw+7] = motor_state[MotorJntIndex.LeftHipYaw]
+
+        model_state[MJModelIndex.RightAnkle+7] = motor_state[MotorJntIndex.RightAnkle]
+        model_state[MJModelIndex.RightKnee+7] = motor_state[MotorJntIndex.RightKnee]
+        model_state[MJModelIndex.RightHipPitch+7] = motor_state[MotorJntIndex.RightHipPitch]
+        model_state[MJModelIndex.RightHipRoll+7] = motor_state[MotorJntIndex.RightHipRoll]
+        model_state[MJModelIndex.RightHipYaw+7] = motor_state[MotorJntIndex.RightHipYaw]
+
+        model_state[MJModelIndex.WaistYaw+7] = motor_state[MotorJntIndex.WaistYaw]
+
+        model_state[MJModelIndex.LeftShoulderPitch+7] = motor_state[MotorJntIndex.LeftShoulderPitch]
+        model_state[MJModelIndex.LeftShoulderRoll+7] = motor_state[MotorJntIndex.LeftShoulderRoll]
+        model_state[MJModelIndex.LeftShoulderYaw+7] = motor_state[MotorJntIndex.LeftShoulderYaw]
+        model_state[MJModelIndex.LeftElbow+7] = motor_state[MotorJntIndex.LeftElbow]
+
+        model_state[MJModelIndex.RightShoulderPitch+7] = motor_state[MotorJntIndex.RightShoulderPitch]
+        model_state[MJModelIndex.RightShoulderRoll+7] = motor_state[MotorJntIndex.RightShoulderRoll]
+        model_state[MJModelIndex.RightShoulderYaw+7] = motor_state[MotorJntIndex.RightShoulderYaw]
+        model_state[MJModelIndex.RightElbow+7] = motor_state[MotorJntIndex.RightElbow]
+
+        return model_state
 
     def LowStateMessageHandler(self, msg: LowState_):
         self.low_state = msg
         # print(msg.motor_state[20].q)
 
-        for i in range(9):
-            self.q[i+7] = msg.motor_state[i].q
-        for i in range(10):
-            self.q[i+16] = msg.motor_state[i+10].q
+        motor_state = np.zeros(kNumMotors)
+        for i in range(kNumMotors):
+            motor_state = msg.motor_state[i].q
 
-        # body rpy
-        
-        # for i in range(3):
-        #     self.q[i] = msg.imu_state.rpy[i]
+        self.q = self.__ModelStateTrans(motor_state, msg.imu_state.quaternion)
+
 
         print("Joint state q:", self.q)
-        print("RPY:", msg.imu_state.quaternion)
+        print("Quaternion:", msg.imu_state.quaternion)
             
 
 input("Press enter to start")
