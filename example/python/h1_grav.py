@@ -2,9 +2,9 @@ import time
 import sys
 import numpy as np
 import pinocchio as pin    
-from pinocchio import casadi as cpin                
-from pinocchio.robot_wrapper import RobotWrapper    
-from pinocchio.visualize import MeshcatVisualizer 
+# from pinocchio import casadi as cpin                
+# from pinocchio.robot_wrapper import RobotWrapper    
+# from pinocchio.visualize import MeshcatVisualizer 
 
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
@@ -40,17 +40,12 @@ tau = np.array([])
 #######################
 class Robot_IK:
     def __init__(self):
-        np.set_printoptions(precision=5, suppress=True, linewidth=200)
-
-        # self.robot = pin.RobotWrapper.BuildFromURDF('../assets/h1_description/urdf/h1_with_hand.urdf', '../assets/h1_description/urdf')
-        # self.robot = pin.RobotWrapper.BuildFromURDF('/robot_description/urdf/h1_with_hand.urdf', '/robot_description/urdf') # for test
-
         self.robot = load_robot_description("h1_mj_description")
 
         self.model = self.robot.model
         self.data = self.robot.data
 
-        frame_id = self.model.getFrameId("right_ankle_link") 
+        self.frame_id = self.model.getFrameId("right_ankle_link") 
 
         print("dof: ",self.model.nv)
 
@@ -59,21 +54,21 @@ class Robot_IK:
             
         # q_ref = pin.integrate(self.model, q0, 0.03* np.random.rand(self.model.nv))
 
-        # self.robot.display(q0)
-
         self.v0 = np.zeros(self.model.nv)
-        self.v_ref = self.v0.copy()
-
         self.a0 = np.zeros(self.model.nv)
     
-        self.data_sim = self.model.createData()
-        self.data_control = self.model.createData()
+        # self.data_sim = self.model.createData()
+        # self.data_control = self.model.createData()
 
+        # breakpoint()
 
         contact_models = []
         contact_datas = [] 
 
-        frame = self.model.frames[frame_id]
+        frame = self.model.frames[self.frame_id]
+
+        # get the id of the body link (pelvis)
+        self.bl_id = self. model.getFrameId("pelvis")
 
         self.contact_model = pin.RigidConstraintModel(
                 pin.ContactType.CONTACT_6D, self.model, frame.parentJoint, frame.placement
@@ -83,41 +78,63 @@ class Robot_IK:
         contact_datas.append(self.contact_model.createData())
 
 
-        num_constraints=1
-        self.contact_dim = 6 * num_constraints
+        self.num_constraints = 1
+        self.contact_dim = 6 * self.num_constraints
 
-        pin.initConstraintDynamics(self.model, self.data_sim, contact_models)
+        # pin.initConstraintDynamics(self.model, self.data_sim, contact_models)
 
         self.q = self.q0.copy()
         self.v = self.v0.copy()
         self.tau = np.zeros(self.model.nv)
 
     def ik_func(self, q0):
-        J_constraint = np.zeros((self.contact_dim, self.model.nv))
-        pin.computeJointJacobians(self.model, self.data_control, self.q)
-
-        J_constraint[ :6, :] = pin.getFrameJacobian(
-                self.model,
-                self.data_control,
-                self.contact_model.joint1_id,
-                self.contact_model.joint1_placement,
-                self.contact_model.reference_frame,
-        )
-
         self.q0 = q0
+
+        pin.framesForwardKinematics(self.model, self.data, self.q0)
 
         self.g_grav = pin.rnea(self.model, self.data, self.q0, self.v0, self.a0) # 25
 
-        # sol = np.linalg.lstsq(J_constraint.T, self.g_grav, rcond=None)[0]
+        print("grav. vec.: ",self.g_grav)
 
-        print(self.g_grav)
-        sol = self.g_grav
+        g_bl = self.g_grav[:6]
+        g_j = self.g_grav[6:]
 
-        self.tau = np.concatenate((np.zeros((6)), sol[: self.model.nv - 6]))
 
-        print(self.tau)
+        Js__foot_q = np.copy(pin.computeFrameJacobian(self.model, self.data, self.q0, self.frame_id, pin.LOCAL))
 
-        return self.g_grav
+        # get the jacobian between contact foot and body linktau
+        Js__foot_bl = np.copy(Js__foot_q[:6, :6]) 
+
+        Jc__foot_bl_T = np.zeros([6, 6 * self.num_constraints])
+
+        # transpot
+        Jc__foot_bl_T[:, :] = np.vstack(Js__foot_bl).T
+
+
+        # Now I only need to do the pinv to compute the contact forces
+        ls = np.linalg.pinv(Jc__foot_bl_T) @ g_bl # This is (3)
+
+
+        # Contact forces at local coordinates 
+        print("ls: ",ls)
+
+        ###############
+
+        # Contact forces at base link frame
+        l_sp = pin.Force(ls)
+        l_sp__bl = self.data.oMf[self.bl_id].actInv(self.data.oMf[self.frame_id].act(l_sp))
+
+        Js_foot_j = np.copy(Js__foot_q[:6, 6:])
+        Jc__foot_j_T = np.zeros([self.model.nv-6, 6 * self.num_constraints])
+        Jc__foot_j_T[:, :] = np.vstack(Js_foot_j).T
+
+        self.tau = g_j - Jc__foot_j_T @ ls
+
+#################
+
+        print("calc. torq.:", self.tau)
+
+        return self.tau
 
 #######################
 
@@ -137,6 +154,8 @@ class State:
             # print(msg.motor_state[20].q)
             for i in range(kNumMotors):
                 self.q[i+6] = msg.motor_state[i].q
+            # body rpy
+            
 
 input("Press enter to start")
 
@@ -175,6 +194,7 @@ if __name__ == '__main__':
 
         runing_time += dt
 
+        print("Joint state q:", state.q)
         tau = h1_ik.ik_func(state.q)
         # print("Joint state q:", state.q)
         # print("Grav. torque:", tau)
@@ -183,7 +203,7 @@ if __name__ == '__main__':
         for i in range(9):
             motor_cmd[i] = tau[i]
         for i in range(10):
-            motor_cmd[i+9] = tau[i+10]
+            motor_cmd[i+10] = tau[i+9]
 
 
         # Total time for standing up or standing down is about 1.2s
