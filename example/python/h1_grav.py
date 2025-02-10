@@ -355,10 +355,11 @@ if __name__ == '__main__':
 
         # print("Joint state q:", state.q)
         tau = h1_ik.ik_func(state.q)
-        print("Grav. torque:", tau)
+        # print("Grav. torque:", tau)
 
         motor_cmd = h1_ik.joint_torq(tau)
         # motor_cmd = h1_ik.joint_torq(tau_ref)
+        print("Grav. torque:", motor_cmd)
 
 
         # Total time for standing up or standing down is about 1.2s
