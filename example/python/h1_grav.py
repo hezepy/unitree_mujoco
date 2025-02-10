@@ -3,8 +3,8 @@ import sys
 import numpy as np
 import pinocchio as pin    
 # from pinocchio import casadi as cpin                
-# from pinocchio.robot_wrapper import RobotWrapper    
-# from pinocchio.visualize import MeshcatVisualizer 
+from pinocchio.robot_wrapper import RobotWrapper    
+from pinocchio.visualize import MeshcatVisualizer 
 
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
@@ -61,6 +61,11 @@ class Robot_IK:
         # self.data_sim = self.model.createData()
         # self.data_control = self.model.createData()
 
+        self.robot.setVisualizer(MeshcatVisualizer())
+        self.robot.initViewer(open=True)
+        self.robot.loadViewerModel("pinocchio")
+        self.robot.display(self.q0)
+
         # breakpoint()
 
         contact_models = []
@@ -115,6 +120,7 @@ class Robot_IK:
         # Now I only need to do the pinv to compute the contact forces
         ls = np.linalg.pinv(Jc__foot_bl_T) @ g_bl # This is (3)
 
+        self.robot.display(self.q0)
 
         # Contact forces at local coordinates 
         # print("ls: ",ls)
