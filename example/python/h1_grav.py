@@ -22,9 +22,9 @@ init_joint = np.array([
     0.0, -0.2, 0.5, 0.0, -0.2, 0.5,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0
+    0.0
 ],
-dtype=float) # 19+1
+dtype=float) # 19
 
 motor_cmd = np.array([
     0.0, -0.2, 0.5, 0.0, -0.2, 0.5,
@@ -50,7 +50,8 @@ class Robot_IK:
         print("dof: ",self.model.nv)
 
         self.q0 = np.zeros(kNumMotors+6) # seems dof is 25, but coordinate is 26 !
-        self.q0[6:] = init_joint
+        self.q0[7:] = init_joint
+        self.q0[6] = 1
             
         # q_ref = pin.integrate(self.model, q0, 0.03* np.random.rand(self.model.nv))
 
@@ -85,7 +86,7 @@ class Robot_IK:
 
         self.q = self.q0.copy()
         self.v = self.v0.copy()
-        self.tau = np.zeros(self.model.nv)
+        self.tau = np.zeros(self.model.nv - 6)
 
     def ik_func(self, q0):
         self.q0 = q0
@@ -94,7 +95,7 @@ class Robot_IK:
 
         self.g_grav = pin.rnea(self.model, self.data, self.q0, self.v0, self.a0) # 25
 
-        print("grav. vec.: ",self.g_grav)
+        # print("grav. vec.: ",self.g_grav)
 
         g_bl = self.g_grav[:6]
         g_j = self.g_grav[6:]
@@ -116,7 +117,7 @@ class Robot_IK:
 
 
         # Contact forces at local coordinates 
-        print("ls: ",ls)
+        # print("ls: ",ls)
 
         ###############
 
@@ -130,12 +131,9 @@ class Robot_IK:
 
         self.tau = g_j - Jc__foot_j_T @ ls
 
-#################
-
-        print("calc. torq.:", self.tau)
+        # print("calc. torq.:", self.tau)
 
         return self.tau
-
 #######################
 
 dt = 0.002
@@ -146,15 +144,26 @@ class State:
     def __init__(self):
         self.low_state = None  
         self.q = np.zeros(kNumMotors+6)
+        self.q[6] = 1
         self.sub = ChannelSubscriber("rt/lowstate", LowState_)
         self.sub.Init(self.LowStateMessageHandler, 10)
 
     def LowStateMessageHandler(self, msg: LowState_):
-            self.low_state = msg
-            # print(msg.motor_state[20].q)
-            for i in range(kNumMotors):
-                self.q[i+6] = msg.motor_state[i].q
-            # body rpy
+        self.low_state = msg
+        # print(msg.motor_state[20].q)
+
+        for i in range(9):
+            self.q[i+7] = msg.motor_state[i].q
+        for i in range(10):
+            self.q[i+16] = msg.motor_state[i+10].q
+
+        # body rpy
+        
+        # for i in range(3):
+        #     self.q[i] = msg.imu_state.rpy[i]
+
+        print("Joint state q:", self.q)
+        print("RPY:", msg.imu_state.quaternion)
             
 
 input("Press enter to start")
@@ -194,9 +203,8 @@ if __name__ == '__main__':
 
         runing_time += dt
 
-        print("Joint state q:", state.q)
-        tau = h1_ik.ik_func(state.q)
         # print("Joint state q:", state.q)
+        tau = h1_ik.ik_func(state.q)
         # print("Grav. torque:", tau)
         
         # motor - joint transform
