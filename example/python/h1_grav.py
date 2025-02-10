@@ -86,12 +86,20 @@ init_joint = np.array([
 dtype=float) # 19
 
 motor_cmd = np.array([
-    0.0, -0.2, 0.5, 0.0, -0.2, 0.5,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0
 ],
 dtype=float) # 20
+
+tau_ref = np.array([
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0
+],
+dtype=float) # 19
 
 q = np.array([])
 tau = np.array([])
@@ -112,6 +120,8 @@ class Robot_IK:
         self.q0 = np.zeros(kNumMotors+6) # seems dof is 25, but coordinate is 26 !
         self.q0[7:] = init_joint
         self.q0[6] = 1
+        # self.q0[4] = -0.7
+        # self.q0[3] = 0.5
             
         # q_ref = pin.integrate(self.model, q0, 0.03* np.random.rand(self.model.nv))
 
@@ -201,6 +211,35 @@ class Robot_IK:
         # print("calc. torq.:", self.tau)
 
         return self.tau
+    
+    def joint_torq(self, tau):
+        motor_tau = np.zeros(kNumMotors)
+
+        motor_tau[MotorJntIndex.LeftAnkle.value] = tau[MJModelIndex.LeftAnkle.value]
+        motor_tau[MotorJntIndex.LeftKnee.value] = tau[MJModelIndex.LeftKnee.value]
+        motor_tau[MotorJntIndex.LeftHipPitch.value] = tau[MJModelIndex.LeftHipPitch.value]
+        motor_tau[MotorJntIndex.LeftHipRoll.value] = tau[MJModelIndex.LeftHipRoll.value]
+        motor_tau[MotorJntIndex.LeftHipYaw.value] = tau[MJModelIndex.LeftHipYaw.value]
+
+        motor_tau[MotorJntIndex.RightAnkle.value] = tau[MJModelIndex.RightAnkle.value]
+        motor_tau[MotorJntIndex.RightKnee.value] = tau[MJModelIndex.RightKnee.value]
+        motor_tau[MotorJntIndex.RightHipPitch.value] = tau[MJModelIndex.RightHipPitch.value]
+        motor_tau[MotorJntIndex.RightHipRoll.value] = tau[MJModelIndex.RightHipRoll.value]
+        motor_tau[MotorJntIndex.RightHipYaw.value] = tau[MJModelIndex.RightHipYaw.value]
+
+        motor_tau[MotorJntIndex.WaistYaw.value] = tau[MJModelIndex.WaistYaw.value]
+
+        motor_tau[MotorJntIndex.LeftShoulderPitch.value] = tau[MJModelIndex.LeftShoulderPitch.value]
+        motor_tau[MotorJntIndex.LeftShoulderRoll.value] = tau[MJModelIndex.LeftShoulderRoll.value]
+        motor_tau[MotorJntIndex.LeftShoulderYaw.value] = tau[MJModelIndex.LeftShoulderYaw.value]
+        motor_tau[MotorJntIndex.LeftElbow.value] = tau[MJModelIndex.LeftElbow.value]
+
+        motor_tau[MotorJntIndex.RightShoulderPitch.value] = tau[MJModelIndex.RightShoulderPitch.value]
+        motor_tau[MotorJntIndex.RightShoulderRoll.value] = tau[MJModelIndex.RightShoulderRoll.value]
+        motor_tau[MotorJntIndex.RightShoulderYaw.value] = tau[MJModelIndex.RightShoulderYaw.value]
+        motor_tau[MotorJntIndex.RightElbow.value] = tau[MJModelIndex.RightElbow.value]
+
+        return motor_tau
 #######################
 
 dt = 0.002
@@ -220,6 +259,11 @@ class State:
         model_state = np.zeros(kNumMotors+6)
 
         # model_state[3:7] = quaternion
+
+        # model_state[5] = quaternion[0]
+        # model_state[3] = quaternion[1]
+        # model_state[4] = quaternion[2]
+        # model_state[6] = quaternion[3]
 
         model_state[6] = 1 #
 
@@ -247,7 +291,7 @@ class State:
         model_state[MJModelIndex.RightShoulderYaw.value+7] = motor_state[MotorJntIndex.RightShoulderYaw.value]
         model_state[MJModelIndex.RightElbow.value+7] = motor_state[MotorJntIndex.RightElbow.value]
 
-        print("motor state: ", motor_state)
+        # print("motor state: ", motor_state)
 
         # breakpoint()
 
@@ -258,14 +302,18 @@ class State:
         # print(msg.motor_state[20].q)
 
         motor_state = np.zeros(kNumMotors)
+        motor_torq = np.zeros(kNumMotors)
         for i in range(kNumMotors):
             motor_state[i] = msg.motor_state[i].q
+            motor_torq[i] = msg.motor_state[i].tau_est
 
         self.q = self.__ModelStateTrans(motor_state, msg.imu_state.quaternion)
 
 
-        print("Joint state q:", self.q)
-        print("Quaternion:", msg.imu_state.quaternion)
+        # print("Joint state q:", self.q)
+        # print("Quaternion:", msg.imu_state.quaternion)
+        # print("RPY:", msg.imu_state.rpy)
+        print("Est. joint torque:", motor_torq)
             
 
 input("Press enter to start")
@@ -307,13 +355,10 @@ if __name__ == '__main__':
 
         # print("Joint state q:", state.q)
         tau = h1_ik.ik_func(state.q)
-        # print("Grav. torque:", tau)
-        
-        # motor - joint transform
-        # for i in range(9):
-        #     motor_cmd[i] = tau[i]
-        # for i in range(10):
-        #     motor_cmd[i+10] = tau[i+9]
+        print("Grav. torque:", tau)
+
+        motor_cmd = h1_ik.joint_torq(tau)
+        # motor_cmd = h1_ik.joint_torq(tau_ref)
 
 
         # Total time for standing up or standing down is about 1.2s
