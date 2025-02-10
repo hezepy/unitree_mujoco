@@ -66,14 +66,14 @@ class MJModelIndex(IntEnum):
     WaistYaw = 10
 
     # Right arm
-    RightShoulderPitch = 17
+    RightShoulderPitch = 15
     RightShoulderRoll = 16
-    RightShoulderYaw = 15
+    RightShoulderYaw = 17
     RightElbow = 18
     # Left arm
-    LeftShoulderPitch = 13
+    LeftShoulderPitch = 11
     LeftShoulderRoll = 12
-    LeftShoulderYaw = 11
+    LeftShoulderYaw = 13
     LeftElbow = 14
 
 
@@ -219,33 +219,37 @@ class State:
 
         model_state = np.zeros(kNumMotors+6)
 
-        model_state[3:7] = quaternion
+        # model_state[3:7] = quaternion
 
         model_state[6] = 1 #
 
-        model_state[MJModelIndex.LeftAnkle+7] = motor_state[MotorJntIndex.LeftAnkle]
-        model_state[MJModelIndex.LeftKnee+7] = motor_state[MotorJntIndex.LeftKnee]
-        model_state[MJModelIndex.LeftHipPitch+7] = motor_state[MotorJntIndex.LeftHipPitch]
-        model_state[MJModelIndex.LeftHipRoll+7] = motor_state[MotorJntIndex.LeftHipRoll]
-        model_state[MJModelIndex.LeftHipYaw+7] = motor_state[MotorJntIndex.LeftHipYaw]
+        model_state[MJModelIndex.LeftAnkle.value+7] = motor_state[MotorJntIndex.LeftAnkle.value]
+        model_state[MJModelIndex.LeftKnee.value+7] = motor_state[MotorJntIndex.LeftKnee.value]
+        model_state[MJModelIndex.LeftHipPitch.value+7] = motor_state[MotorJntIndex.LeftHipPitch.value]
+        model_state[MJModelIndex.LeftHipRoll.value+7] = motor_state[MotorJntIndex.LeftHipRoll.value]
+        model_state[MJModelIndex.LeftHipYaw.value+7] = motor_state[MotorJntIndex.LeftHipYaw.value]
 
-        model_state[MJModelIndex.RightAnkle+7] = motor_state[MotorJntIndex.RightAnkle]
-        model_state[MJModelIndex.RightKnee+7] = motor_state[MotorJntIndex.RightKnee]
-        model_state[MJModelIndex.RightHipPitch+7] = motor_state[MotorJntIndex.RightHipPitch]
-        model_state[MJModelIndex.RightHipRoll+7] = motor_state[MotorJntIndex.RightHipRoll]
-        model_state[MJModelIndex.RightHipYaw+7] = motor_state[MotorJntIndex.RightHipYaw]
+        model_state[MJModelIndex.RightAnkle.value+7] = motor_state[MotorJntIndex.RightAnkle.value]
+        model_state[MJModelIndex.RightKnee.value+7] = motor_state[MotorJntIndex.RightKnee.value]
+        model_state[MJModelIndex.RightHipPitch.value+7] = motor_state[MotorJntIndex.RightHipPitch.value]
+        model_state[MJModelIndex.RightHipRoll.value+7] = motor_state[MotorJntIndex.RightHipRoll.value]
+        model_state[MJModelIndex.RightHipYaw.value+7] = motor_state[MotorJntIndex.RightHipYaw.value]
 
-        model_state[MJModelIndex.WaistYaw+7] = motor_state[MotorJntIndex.WaistYaw]
+        model_state[MJModelIndex.WaistYaw.value+7] = motor_state[MotorJntIndex.WaistYaw.value]
 
-        model_state[MJModelIndex.LeftShoulderPitch+7] = motor_state[MotorJntIndex.LeftShoulderPitch]
-        model_state[MJModelIndex.LeftShoulderRoll+7] = motor_state[MotorJntIndex.LeftShoulderRoll]
-        model_state[MJModelIndex.LeftShoulderYaw+7] = motor_state[MotorJntIndex.LeftShoulderYaw]
-        model_state[MJModelIndex.LeftElbow+7] = motor_state[MotorJntIndex.LeftElbow]
+        model_state[MJModelIndex.LeftShoulderPitch.value+7] = motor_state[MotorJntIndex.LeftShoulderPitch.value]
+        model_state[MJModelIndex.LeftShoulderRoll.value+7] = motor_state[MotorJntIndex.LeftShoulderRoll.value]
+        model_state[MJModelIndex.LeftShoulderYaw.value+7] = motor_state[MotorJntIndex.LeftShoulderYaw.value]
+        model_state[MJModelIndex.LeftElbow.value+7] = motor_state[MotorJntIndex.LeftElbow.value]
 
-        model_state[MJModelIndex.RightShoulderPitch+7] = motor_state[MotorJntIndex.RightShoulderPitch]
-        model_state[MJModelIndex.RightShoulderRoll+7] = motor_state[MotorJntIndex.RightShoulderRoll]
-        model_state[MJModelIndex.RightShoulderYaw+7] = motor_state[MotorJntIndex.RightShoulderYaw]
-        model_state[MJModelIndex.RightElbow+7] = motor_state[MotorJntIndex.RightElbow]
+        model_state[MJModelIndex.RightShoulderPitch.value+7] = motor_state[MotorJntIndex.RightShoulderPitch.value]
+        model_state[MJModelIndex.RightShoulderRoll.value+7] = motor_state[MotorJntIndex.RightShoulderRoll.value]
+        model_state[MJModelIndex.RightShoulderYaw.value+7] = motor_state[MotorJntIndex.RightShoulderYaw.value]
+        model_state[MJModelIndex.RightElbow.value+7] = motor_state[MotorJntIndex.RightElbow.value]
+
+        print("motor state: ", motor_state)
+
+        # breakpoint()
 
         return model_state
 
@@ -255,7 +259,7 @@ class State:
 
         motor_state = np.zeros(kNumMotors)
         for i in range(kNumMotors):
-            motor_state = msg.motor_state[i].q
+            motor_state[i] = msg.motor_state[i].q
 
         self.q = self.__ModelStateTrans(motor_state, msg.imu_state.quaternion)
 
@@ -306,10 +310,10 @@ if __name__ == '__main__':
         # print("Grav. torque:", tau)
         
         # motor - joint transform
-        for i in range(9):
-            motor_cmd[i] = tau[i]
-        for i in range(10):
-            motor_cmd[i+10] = tau[i+9]
+        # for i in range(9):
+        #     motor_cmd[i] = tau[i]
+        # for i in range(10):
+        #     motor_cmd[i+10] = tau[i+9]
 
 
         # Total time for standing up or standing down is about 1.2s
