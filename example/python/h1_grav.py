@@ -139,7 +139,7 @@ class Robot_IK:
         print("Init. state q:", self.q0)
         # breakpoint()
 
-        contact_models = []
+        self.contact_models = []
         contact_datas = [] 
 
         frame = self.model.frames[self.frame_id]
@@ -151,7 +151,7 @@ class Robot_IK:
                 pin.ContactType.CONTACT_6D, self.model, frame.parentJoint, frame.placement
         )
 
-        contact_models.append(self.contact_model)
+        self.contact_models.append(self.contact_model)
         contact_datas.append(self.contact_model.createData())
 
 
@@ -168,6 +168,7 @@ class Robot_IK:
         self.q0 = q0
 
         pin.framesForwardKinematics(self.model, self.data, self.q0)
+        pin.updateFramePlacements(self.model, self.data)
 
         self.g_grav = pin.rnea(self.model, self.data, self.q0, self.v0, self.a0) # 25
 
@@ -177,40 +178,31 @@ class Robot_IK:
         g_j = self.g_grav[6:]
 
 
-        Js__foot_q = np.copy(pin.computeFrameJacobian(self.model, self.data, self.q0, self.frame_id, pin.LOCAL))
+        Js__foot_q = np.copy(pin.computeFrameJacobian(self.model, self.data, self.q0, self.frame_id, pin.WORLD))
 
         # get the jacobian between contact foot and body linktau
         Js__foot_bl = np.copy(Js__foot_q[:6, :6]) 
+        Js__foot_bj = np.copy(Js__foot_q[:, 6:])
 
-        Jc__foot_bl_T = np.zeros([6, 6 * self.num_constraints])
+        G_up = np.linalg.pinv(Js__foot_bl) @ Js__foot_bj
+        mat_E = np.identity(19)
+        mat_G = np.zeros((25, 19))
+        mat_G[:6, :] = G_up
+        mat_G[6:, :] = mat_E
 
-        # transpot
-        Jc__foot_bl_T[:, :] = np.vstack(Js__foot_bl).T
+        # print("Contact Jacobian in world frame 1: ", Js__foot_bl)
+        # print("Contact Jacobian in world frame 2: ", Js__foot_bj)
 
+        print("G1: ", mat_G)
+        G_T = mat_G.transpose()
 
-        # Now I only need to do the pinv to compute the contact forces
-        ls = np.linalg.pinv(Jc__foot_bl_T) @ g_bl # This is (3)
+        self.tau = G_T @ self.g_grav
 
-        self.robot.display(self.q0)
+        # self.tau = self.g_grav[6:]
 
-        # Contact forces at local coordinates 
-        # print("ls: ",ls)
-
-        ###############
-
-        # Contact forces at base link frame
-        l_sp = pin.Force(ls)
-        l_sp__bl = self.data.oMf[self.bl_id].actInv(self.data.oMf[self.frame_id].act(l_sp))
-
-        Js_foot_j = np.copy(Js__foot_q[:6, 6:])
-        Jc__foot_j_T = np.zeros([self.model.nv-6, 6 * self.num_constraints])
-        Jc__foot_j_T[:, :] = np.vstack(Js_foot_j).T
-
-        self.tau = g_j - Jc__foot_j_T @ ls
-
-        # print("calc. torq.:", self.tau)
 
         return self.tau
+
     
     def joint_torq(self, tau):
         motor_tau = np.zeros(kNumMotors)
@@ -313,7 +305,7 @@ class State:
         # print("Joint state q:", self.q)
         # print("Quaternion:", msg.imu_state.quaternion)
         # print("RPY:", msg.imu_state.rpy)
-        print("Est. joint torque:", motor_torq)
+        # print("Est. joint torque:", motor_torq)
             
 
 input("Press enter to start")
@@ -359,7 +351,7 @@ if __name__ == '__main__':
 
         motor_cmd = h1_ik.joint_torq(tau)
         # motor_cmd = h1_ik.joint_torq(tau_ref)
-        print("Grav. torque:", motor_cmd)
+        # print("Grav. torque:", motor_cmd)
 
 
         # Total time for standing up or standing down is about 1.2s
