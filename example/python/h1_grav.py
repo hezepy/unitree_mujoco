@@ -101,6 +101,14 @@ tau_ref = np.array([
 ],
 dtype=float) # 19
 
+stand_down_joint_pos = np.array([
+    0.0, -0.8, 1.0, 0.0, -0.8, 1.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0
+],
+dtype=float)
+
 q = np.array([])
 tau = np.array([])
 
@@ -113,6 +121,7 @@ class Robot_IK:
         self.data = self.robot.data
 
         self.frame_id = self.model.getFrameId("right_ankle_link") 
+        # self.frame_id = 23
 
         print("dof: ",self.model.nv)
         print("frame_id: ",self.frame_id)
@@ -120,8 +129,6 @@ class Robot_IK:
         self.q0 = np.zeros(kNumMotors+6) # seems dof is 25, but coordinate is 26 !
         self.q0[7:] = init_joint
         self.q0[6] = 1
-        # self.q0[4] = -0.7
-        # self.q0[3] = 0.5
             
         # q_ref = pin.integrate(self.model, q0, 0.03* np.random.rand(self.model.nv))
 
@@ -172,7 +179,7 @@ class Robot_IK:
 
         self.g_grav = pin.rnea(self.model, self.data, self.q0, self.v0, self.a0) # 25
 
-        # print("grav. vec.: ",self.g_grav)
+        print("grav. vec.: ",self.g_grav)
 
         g_bl = self.g_grav[:6]
         g_j = self.g_grav[6:]
@@ -197,9 +204,7 @@ class Robot_IK:
         G_T = mat_G.transpose()
 
         self.tau = G_T @ self.g_grav
-
         # self.tau = self.g_grav[6:]
-
 
         return self.tau
 
@@ -356,10 +361,10 @@ if __name__ == '__main__':
 
         # Total time for standing up or standing down is about 1.2s
         for i in range(kNumMotors):
-            cmd.motor_cmd[i].q = 0.0
-            cmd.motor_cmd[i].kp = 0.0
+            cmd.motor_cmd[i].q = stand_down_joint_pos[i]
+            cmd.motor_cmd[i].kp = 50.0
             cmd.motor_cmd[i].dq = 0.0
-            cmd.motor_cmd[i].kd = 0.0
+            cmd.motor_cmd[i].kd = 3.0
             cmd.motor_cmd[i].tau = motor_cmd[i]
 
         cmd.crc = crc.Crc(cmd)
