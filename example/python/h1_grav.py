@@ -176,6 +176,7 @@ class Robot_IK:
 
         pin.framesForwardKinematics(self.model, self.data, self.q0)
         pin.updateFramePlacements(self.model, self.data)
+        self.robot.display(self.q0)
 
         self.g_grav = pin.rnea(self.model, self.data, self.q0, self.v0, self.a0) # 25
 
@@ -185,13 +186,14 @@ class Robot_IK:
         g_j = self.g_grav[6:]
 
 
-        Js__foot_q = np.copy(pin.computeFrameJacobian(self.model, self.data, self.q0, self.frame_id, pin.WORLD))
+        Js__foot_q = np.copy(pin.computeFrameJacobian(self.model, self.data, self.q0, self.frame_id, pin.LOCAL))
 
         # get the jacobian between contact foot and body linktau
         Js__foot_bl = np.copy(Js__foot_q[:6, :6]) 
         Js__foot_bj = np.copy(Js__foot_q[:, 6:])
 
         G_up = np.linalg.pinv(Js__foot_bl) @ Js__foot_bj
+        G_up = -1 * G_up
         mat_E = np.identity(19)
         mat_G = np.zeros((25, 19))
         mat_G[:6, :] = G_up
@@ -366,6 +368,7 @@ if __name__ == '__main__':
             cmd.motor_cmd[i].dq = 0.0
             cmd.motor_cmd[i].kd = 3.0
             cmd.motor_cmd[i].tau = motor_cmd[i]
+            # cmd.motor_cmd[i].tau = 0.0
 
         cmd.crc = crc.Crc(cmd)
         pub.Write(cmd)
