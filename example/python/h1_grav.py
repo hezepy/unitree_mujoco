@@ -18,6 +18,8 @@ from unitree_sdk2py.utils.crc import CRC
 
 from robot_descriptions.loaders.pinocchio import load_robot_description
 
+import transforms3d.quaternions as tq
+
 kNumMotors = 20
 
 class MotorJntIndex(IntEnum):
@@ -78,8 +80,8 @@ class MJModelIndex(IntEnum):
 
 
 init_joint = np.array([
-    0.0, 0.0, -0.8, 1.0, 0.0, 0.0,
-    0.0, -0.8, 1.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, -0.8, 1.0, -0.3, 0.0,
+    0.0, -0.8, 1.0, -0.3, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0
 ],
@@ -103,11 +105,15 @@ dtype=float) # 19
 
 stand_down_joint_pos = np.array([
     0.0, -0.8, 1.0, 0.0, -0.8, 1.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, -0.4, -0.4,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0
 ],
 dtype=float)
+
+# init_quat = np.array([0.498303, 0.499454, -0.500496, 0.501741]) # 0.498303 0.499454 -0.500496 0.501741
+init_quat = np.array([0.0, 0.0, 0.0, 1.0])
+# init_quat = np.array([0.08244042843580246, 0.31896570324897766, 0.05260695144534111, 0.9427072405815125])
 
 q = np.array([])
 tau = np.array([])
@@ -120,7 +126,7 @@ class Robot_IK:
         self.model = self.robot.model
         self.data = self.robot.data
 
-        self.frame_id = self.model.getFrameId("torso_link") #torso_link
+        self.frame_id = self.model.getFrameId("torso_link") #torso_link right_ankle_link
         # self.frame_id = 23
 
         print("dof: ",self.model.nv)
@@ -128,8 +134,19 @@ class Robot_IK:
 
         self.q0 = np.zeros(kNumMotors+6) # seems dof is 25, but coordinate is 26 !
         self.q0[7:] = init_joint
-        self.q0[6] = 1
-            
+        # self.q0[6] = 1
+
+        self.q0[3:7] = init_quat
+        
+        temp_quat = np.zeros(4)
+        temp_quat[1:] = init_quat[:3]
+        temp_quat[0] = init_quat[3]
+
+        rotation_matrix = tq.quat2mat(temp_quat)
+        print("Rotation matrix: ", rotation_matrix)
+
+        #################
+
         # q_ref = pin.integrate(self.model, q0, 0.03* np.random.rand(self.model.nv))
 
         self.v0 = np.zeros(self.model.nv)
@@ -181,11 +198,10 @@ class Robot_IK:
 
         self.g_grav = pin.rnea(self.model, self.data, self.q0, self.v0, self.a0) # 25
 
-        print("grav. vec.: ",self.g_grav)
+        # print("grav. vec.: ",self.g_grav)
 
-        g_bl = self.g_grav[:6]
-        g_j = self.g_grav[6:]
-
+        com = pin.centerOfMass(self.model, self.data, self.q0)
+        print("robot com: ", com)
 
         Js__foot_q = np.copy(pin.computeFrameJacobian(self.model, self.data, self.q0, self.frame_id, pin.LOCAL))
 
@@ -203,7 +219,7 @@ class Robot_IK:
         # print("Contact Jacobian in world frame 1: ", Js__foot_bl)
         # print("Contact Jacobian in world frame 2: ", Js__foot_bj)
 
-        print("G1: ", mat_G)
+        # print("G1: ", mat_G)
         G_T = mat_G.transpose()
 
         self.tau = G_T @ self.g_grav
@@ -259,13 +275,14 @@ class State:
         model_state = np.zeros(kNumMotors+6)
 
         # model_state[3:7] = quaternion
+        # model_state[3:7] = init_quat
 
-        # model_state[5] = quaternion[0]
-        # model_state[3] = quaternion[1]
-        # model_state[4] = quaternion[2]
-        # model_state[6] = quaternion[3]
+        model_state[3] = quaternion[1]
+        model_state[4] = quaternion[2]
+        model_state[5] = quaternion[3]
+        model_state[6] = quaternion[0]
 
-        model_state[6] = 1 #
+        # model_state[6] = 1 #
 
         model_state[MJModelIndex.LeftAnkle.value+7] = motor_state[MotorJntIndex.LeftAnkle.value]
         model_state[MJModelIndex.LeftKnee.value+7] = motor_state[MotorJntIndex.LeftKnee.value]
