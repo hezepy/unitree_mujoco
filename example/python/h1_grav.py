@@ -389,12 +389,12 @@ if __name__ == '__main__':
         cmd.motor_cmd[i].kd = 0.0
         cmd.motor_cmd[i].tau = 0.0
 
-    # date_folder = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    date_folder = datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
-    # if not os.path.exists(date_folder):
-    #     os.makedirs(date_folder)
+    if not os.path.exists(date_folder):
+        os.makedirs(date_folder)
 
-    # file_path = os.path.join(date_folder, "log.txt")
+    file_path = os.path.join(date_folder, "log.txt")
 
     while True:
         step_start = time.perf_counter()
@@ -425,9 +425,10 @@ if __name__ == '__main__':
         cmd.crc = crc.Crc(cmd)
         pub.Write(cmd)
 
-        # log
-        # np.savetxt(file_path, motor_cmd, newline=" ")
-        # np.savetxt(file_path, state.q, newline=" ")
+        with open(file_path, "a") as f:
+            np.savetxt(f, motor_cmd.reshape(1, -1), fmt='%f', delimiter=' ', newline=' ')
+            np.savetxt(f, state.motor_torq.reshape(1, -1), fmt='%f', delimiter=' ', newline=' ')
+            f.write("\n")
 
         time_until_next_step = dt - (time.perf_counter() - step_start)
         if time_until_next_step > 0:

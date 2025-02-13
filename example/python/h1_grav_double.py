@@ -20,6 +20,10 @@ from robot_descriptions.loaders.pinocchio import load_robot_description
 
 import transforms3d.quaternions as tq
 
+from pathlib import Path
+from datetime import datetime
+import os
+
 kNumMotors = 20
 
 class MotorJntIndex(IntEnum):
@@ -404,6 +408,13 @@ if __name__ == '__main__':
         cmd.motor_cmd[i].kd = 0.0
         cmd.motor_cmd[i].tau = 0.0
 
+    date_folder = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+
+    if not os.path.exists(date_folder):
+        os.makedirs(date_folder)
+
+    file_path = os.path.join(date_folder, "log.txt")
+
     while True:
         step_start = time.perf_counter()
 
@@ -416,7 +427,6 @@ if __name__ == '__main__':
         motor_cmd = h1_ik.joint_torq(tau)
         # motor_cmd = h1_ik.joint_torq(tau_ref)
         # print("Grav. torque:", motor_cmd)
-
 
         # Total time for standing up or standing down is about 1.2s
         for i in range(kNumMotors):
@@ -432,6 +442,13 @@ if __name__ == '__main__':
 
         print("right hip p cmd torque: ", motor_cmd[12])
         print("right hip p est torque: ", state.motor_torq[12])
+        
+        # np.savetxt(file_path, state.motor_torq, fmt='%f', newline=' ')
+        with open(file_path, "a") as f:
+            np.savetxt(f, motor_cmd.reshape(1, -1), fmt='%f', delimiter=' ', newline=' ')
+            np.savetxt(f, state.motor_torq.reshape(1, -1), fmt='%f', delimiter=' ', newline=' ')
+            f.write("\n")
+
 
         time_until_next_step = dt - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
