@@ -20,6 +20,10 @@ from robot_descriptions.loaders.pinocchio import load_robot_description
 
 import transforms3d.quaternions as tq
 
+from pathlib import Path
+from datetime import datetime
+import os
+
 kNumMotors = 20
 
 class MotorJntIndex(IntEnum):
@@ -365,6 +369,13 @@ if __name__ == '__main__':
         cmd.motor_cmd[i].kd = 0.0
         cmd.motor_cmd[i].tau = 0.0
 
+    # date_folder = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+
+    # if not os.path.exists(date_folder):
+    #     os.makedirs(date_folder)
+
+    # file_path = os.path.join(date_folder, "log.txt")
+
     while True:
         step_start = time.perf_counter()
 
@@ -390,6 +401,10 @@ if __name__ == '__main__':
 
         cmd.crc = crc.Crc(cmd)
         pub.Write(cmd)
+
+        # log
+        # np.savetxt(file_path, motor_cmd, newline=" ")
+        # np.savetxt(file_path, state.q, newline=" ")
 
         time_until_next_step = dt - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
