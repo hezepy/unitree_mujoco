@@ -126,7 +126,7 @@ class Robot_IK:
         self.model = self.robot.model
         self.data = self.robot.data
 
-        self.frame_id = self.model.getFrameId("right_ankle_link") #torso_link right_ankle_link
+        self.frame_id = self.model.getFrameId("torso_link") #torso_link right_ankle_link
         self.frame2_id = self.model.getFrameId("left_ankle_link") #torso_link right_ankle_link
         # self.frame_id = 23
 
@@ -401,7 +401,7 @@ if __name__ == '__main__':
         # Total time for standing up or standing down is about 1.2s
         for i in range(kNumMotors):
             cmd.motor_cmd[i].q = stand_down_joint_pos[i]
-            cmd.motor_cmd[i].kp = 5.0
+            cmd.motor_cmd[i].kp = 0.0
             cmd.motor_cmd[i].dq = 0.0
             cmd.motor_cmd[i].kd = 1.0
             cmd.motor_cmd[i].tau = motor_cmd[i]
