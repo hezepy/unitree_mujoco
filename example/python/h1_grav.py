@@ -115,6 +115,21 @@ stand_down_joint_pos = np.array([
 ],
 dtype=float)
 
+def IsWeakMotor(motor_index):
+    weak_motors = {
+           MotorJntIndex.LeftAnkle, 
+           MotorJntIndex.RightAnkle, 
+           MotorJntIndex.RightShoulderPitch, 
+           MotorJntIndex.RightShoulderRoll, 
+           MotorJntIndex.RightShoulderYaw, 
+           MotorJntIndex.RightElbow, 
+           MotorJntIndex.LeftShoulderPitch, 
+           MotorJntIndex.LeftShoulderRoll, 
+           MotorJntIndex.LeftShoulderYaw, 
+           MotorJntIndex.LeftElbow
+    }
+    return motor_index in weak_motors
+
 # init_quat = np.array([0.498303, 0.499454, -0.500496, 0.501741]) # 0.498303 0.499454 -0.500496 0.501741
 init_quat = np.array([0.0, 0.0, 0.0, 1.0])
 # init_quat = np.array([0.08244042843580246, 0.31896570324897766, 0.05260695144534111, 0.9427072405815125])
@@ -362,7 +377,12 @@ if __name__ == '__main__':
     cmd.level_flag = 0xFF
     cmd.gpio = 0
     for i in range(kNumMotors):
-        cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
+        # cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
+        if IsWeakMotor(i):
+          cmd.motor_cmd[i].mode = 0x01
+        else:
+          cmd.motor_cmd[i].mode = 0x0A
+        
         cmd.motor_cmd[i].q = 0.0
         cmd.motor_cmd[i].kp = 0.0
         cmd.motor_cmd[i].dq = 0.0
@@ -398,6 +418,8 @@ if __name__ == '__main__':
             cmd.motor_cmd[i].kd = 1.0
             cmd.motor_cmd[i].tau = motor_cmd[i]
             # cmd.motor_cmd[i].tau = 0.0
+
+        print("motor torque: ", motor_cmd)
 
         cmd.crc = crc.Crc(cmd)
         pub.Write(cmd)
