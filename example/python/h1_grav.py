@@ -338,10 +338,10 @@ class State:
         # print(msg.motor_state[20].q)
 
         motor_state = np.zeros(kNumMotors)
-        motor_torq = np.zeros(kNumMotors)
+        self.motor_torq = np.zeros(kNumMotors)
         for i in range(kNumMotors):
             motor_state[i] = msg.motor_state[i].q
-            motor_torq[i] = msg.motor_state[i].tau_est
+            self.motor_torq[i] = msg.motor_state[i].tau_est
 
         self.q = self.__ModelStateTrans(motor_state, msg.imu_state.quaternion)
 
@@ -349,7 +349,7 @@ class State:
         # print("Joint state q:", self.q)
         # print("Quaternion:", msg.imu_state.quaternion)
         # print("RPY:", msg.imu_state.rpy)
-        # print("Est. joint torque:", motor_torq)
+        # print("Est. joint torque:", self.motor_torq)
             
 
 input("Press enter to start")
@@ -419,7 +419,8 @@ if __name__ == '__main__':
             cmd.motor_cmd[i].tau = motor_cmd[i]
             # cmd.motor_cmd[i].tau = 0.0
 
-        print("motor torque: ", motor_cmd)
+        print("right hip p cmd torque: ", motor_cmd[12])
+        print("right hip p est torque: ", state.motor_torq[12])
 
         cmd.crc = crc.Crc(cmd)
         pub.Write(cmd)

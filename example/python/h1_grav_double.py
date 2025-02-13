@@ -111,6 +111,21 @@ stand_down_joint_pos = np.array([
 ],
 dtype=float)
 
+def IsWeakMotor(motor_index):
+    weak_motors = {
+           MotorJntIndex.LeftAnkle, 
+           MotorJntIndex.RightAnkle, 
+           MotorJntIndex.RightShoulderPitch, 
+           MotorJntIndex.RightShoulderRoll, 
+           MotorJntIndex.RightShoulderYaw, 
+           MotorJntIndex.RightElbow, 
+           MotorJntIndex.LeftShoulderPitch, 
+           MotorJntIndex.LeftShoulderRoll, 
+           MotorJntIndex.LeftShoulderYaw, 
+           MotorJntIndex.LeftElbow
+    }
+    return motor_index in weak_motors
+
 # init_quat = np.array([0.498303, 0.499454, -0.500496, 0.501741]) # 0.498303 0.499454 -0.500496 0.501741
 init_quat = np.array([0.0, 0.0, 0.0, 1.0])
 # init_quat = np.array([0.08244042843580246, 0.31896570324897766, 0.05260695144534111, 0.9427072405815125])
@@ -338,10 +353,10 @@ class State:
         # print(msg.motor_state[20].q)
 
         motor_state = np.zeros(kNumMotors)
-        motor_torq = np.zeros(kNumMotors)
+        self.motor_torq = np.zeros(kNumMotors)
         for i in range(kNumMotors):
             motor_state[i] = msg.motor_state[i].q
-            motor_torq[i] = msg.motor_state[i].tau_est
+            self.motor_torq[i] = msg.motor_state[i].tau_est
 
         self.q = self.__ModelStateTrans(motor_state, msg.imu_state.quaternion)
 
@@ -349,7 +364,7 @@ class State:
         # print("Joint state q:", self.q)
         # print("Quaternion:", msg.imu_state.quaternion)
         # print("RPY:", msg.imu_state.rpy)
-        # print("Est. joint torque:", motor_torq)
+        # print("Est. joint torque:", self.motor_torq)
             
 
 input("Press enter to start")
@@ -377,7 +392,12 @@ if __name__ == '__main__':
     cmd.level_flag = 0xFF
     cmd.gpio = 0
     for i in range(kNumMotors):
-        cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
+        # cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
+        if IsWeakMotor(i):
+          cmd.motor_cmd[i].mode = 0x01
+        else:
+          cmd.motor_cmd[i].mode = 0x0A
+
         cmd.motor_cmd[i].q = 0.0
         cmd.motor_cmd[i].kp = 0.0
         cmd.motor_cmd[i].dq = 0.0
@@ -403,12 +423,15 @@ if __name__ == '__main__':
             cmd.motor_cmd[i].q = stand_down_joint_pos[i]
             cmd.motor_cmd[i].kp = 0.0
             cmd.motor_cmd[i].dq = 0.0
-            cmd.motor_cmd[i].kd = 1.0
+            cmd.motor_cmd[i].kd = 0.0
             cmd.motor_cmd[i].tau = motor_cmd[i]
             # cmd.motor_cmd[i].tau = 0.0
 
         cmd.crc = crc.Crc(cmd)
         pub.Write(cmd)
+
+        print("right hip p cmd torque: ", motor_cmd[12])
+        print("right hip p est torque: ", state.motor_torq[12])
 
         time_until_next_step = dt - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
